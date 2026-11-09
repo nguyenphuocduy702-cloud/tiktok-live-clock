@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Live Studio - Đồng Hồ Thời Gian Thực</title>
+    <style>
+        :root {
+            --bg-glass: rgba(20, 20, 30, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+            --accent-color: #fe2c55;
+            --secondary-color: #25f4ee;
+            --glow-color: rgba(254, 44, 85, 0.6);
+            --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --border-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: transparent;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            padding: 10px;
+        }
+
+        /* Container chính */
+        .clock-container {
+            position: relative;
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: var(--border-radius);
+            padding: 16px 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 260px;
+            cursor: move;
+            user-select: none;
+            transition: border 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .clock-container:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 20px rgba(37, 244, 238, 0.4);
+        }
+
+        /* Phần Ngày tháng */
+        .date-section {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Phần Giờ : Phút : Giây */
+        .time-section {
+            font-size: 32px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1.5px;
+            color: var(--text-color);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .time-section .separator {
+            animation: blink 1s infinite;
+            color: var(--accent-color);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .seconds {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            opacity: 0.9;
+            margin-left: 2px;
+        }
+
+        /* Câu chào / Tên kênh chạy phía dưới */
+        .live-tag {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 1px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 4px;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Bảng điều khiển cài đặt (ẩn đi khi live) */
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            background: rgba(15, 15, 25, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 14px 18px;
+            border-radius: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            font-size: 13px;
+        }
+
+        .control-panel select, .control-panel input, .control-panel button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .control-panel button {
+            background: var(--accent-color);
+            font-weight: bold;
+            border: none;
+        }
+
+        .control-panel button.btn-green {
+            background: #25f4ee;
+            color: #000;
+        }
+
+        .control-panel button.btn-yellow {
+            background: #f59e0b;
+            color: #000;
+        }
+
+        .control-panel label {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            color: #ccc;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Các Themes */
+        body.theme-glass {
+            --bg-glass: rgba(20, 20, 30, 0.75);
+            --border-glass: rgba(255, 255, 255, 0.15);
+            --text-color: #ffffff;
+            --accent-color: #fe2c55;
+            --secondary-color: #25f4ee;
+        }
+
+        body.theme-neon {
+            --bg-glass: rgba(5, 5, 10, 0.85);
+            --border-glass: #25f4ee;
+            --text-color: #25f4ee;
+            --accent-color: #fe2c55;
+            --secondary-color: #ff007f;
+            box-shadow: inset 0 0 15px rgba(37,244,238,0.2);
+        }
+
+        body.theme-pink {
+            --bg-glass: rgba(45, 15, 30, 0.8);
+            --border-glass: rgba(255, 105, 180, 0.4);
+            --text-color: #fff0f5;
+            --accent-color: #ff1493;
+            --secondary-color: #ffb6c1;
+        }
+
+        body.theme-gold {
+            --bg-glass: rgba(20, 20, 20, 0.9);
+            --border-glass: #d4af37;
+            --text-color: #f3e5ab;
+            --accent-color: #d4af37;
+            --secondary-color: #fff8dc;
+        }
+
+        body.theme-retro {
+            --bg-glass: rgba(40, 25, 10, 0.85);
+            --border-glass: #e09f3e;
+            --text-color: #ffe8d6;
+            --accent-color: #e09f3e;
+            --secondary-color: #9e2a2b;
+        }
+
+        /* Chế độ xanh lá chroma key */
+        body.chroma-key {
+            background: #00ff00 !important;
+        }
+    </style>
+</head>
+<body class="theme-glass">
+
+    <div class="clock-container" id="clockBox">
+        <div class="date-section" id="dateText">Thứ Hai, 09/11/2026</div>
+        <div class="time-section">
+            <span id="hours">00</span><span class="separator">:</span><span id="minutes">00</span><span class="seconds" id="seconds">:00</span>
+        </div>
+        <div class="live-tag" id="customTag">🔴 TIKTOK LIVE STUDIO</div>
+    </div>
+
+    <!-- Bảng điều khiển -->
+    <div class="control-panel" id="controlPanel">
+        <label>Giao diện:
+            <select id="themeSelect" onchange="changeTheme()">
+                <option value="theme-glass">Kính Trong Suốt</option>
+                <option value="theme-neon">Neon Cyber</option>
+                <option value="theme-pink">Hồng Pastel</option>
+                <option value="theme-gold">Luxury Gold</option>
+                <option value="theme-retro">Retro Quán Xá</option>
+            </select>
+        </label>
+
+        <label>Kiểu Ngày:
+            <select id="dateFormat" onchange="saveSettings()">
+                <option value="full">Thứ Hai, 09/11/2026</option>
+                <option value="short">T2 - 09/11/2026</option>
+                <option value="formal">Ngày 09 Tháng 11, 2026</option>
+            </select>
+        </label>
+
+        <label>Dòng chú thích:
+            <input type="text" id="tagInput" value="🔴 TIKTOK LIVE STUDIO" oninput="updateTag()">
+        </label>
+
+        <label>Bo góc:
+            <input type="range" id="radiusRange" min="0" max="30" value="16" oninput="updateRadius()">
+        </label>
+
+        <button onclick="toggleChroma()" class="btn-green">Phông Xanh Lá</button>
+        <button onclick="openStartupModal()" class="btn-yellow">⚡ Tự khởi động Win</button>
+        <button onclick="togglePanel()">Ẩn Bảng (F9)</button>
+    </div>
+
+    <!-- Modal Cài Đặt Tự Khởi Động -->
+    <div id="startupModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; justify-content:center; align-items:center;">
+        <div style="background:#1a1a2e; border:1px solid #25f4ee; padding:25px; border-radius:14px; width:450px; color:#fff; display:flex; flex-direction:column; gap:15px; box-shadow:0 10px 30px rgba(0,0,0,0.7);">
+            <h3 style="color:#25f4ee; margin-bottom:5px;">⚡ Cài Đặt Tự Khởi Động Cùng Windows</h3>
+            <p style="font-size:13px; color:#ccc; line-height:1.5;">
+                Bạn có thể cài đặt để thanh đồng hồ này tự động bật ngay khi khởi động máy tính hoặc mở TikTok Live Studio:
+            </p>
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; font-size:12px; line-height:1.6;">
+                <b>Cách 1 (Khuyên dùng cho TikTok Live):</b> Thêm file HTML này vào nguồn <b>Liên kết (Browser Source)</b> của TikTok Live Studio. Mỗi lần mở Live Studio, đồng hồ tự chạy ngầm.
+            </div>
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; font-size:12px; line-height:1.6;">
+                <b>Cách 2 (Mở cửa sổ riêng khi bật máy):</b> Nháy đúp vào file <code>Cai_Dat_Tu_Khoi_Dong.bat</code> trong thư mục để đưa đồng hồ vào Startup Windows.
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+                <button onclick="downloadBatFile()" style="background:#f59e0b; color:#000; border:none; padding:8px 14px; border-radius:6px; font-weight:bold; cursor:pointer;">📥 Tải file .BAT Tự Khởi Động</button>
+                <button onclick="closeStartupModal()" style="background:#555; color:#fff; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cập nhật Ngày và Giờ thời gian thực
+        function updateClock() {
+            const now = new Date();
+            
+            // Định dạng thứ trong tuần bằng tiếng Việt
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            const dayName = days[now.getDay()];
+            const shortDays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            const shortDayName = shortDays[now.getDay()];
+
+            const day = String(now.getDate()).padStart(2, '0');
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const year = now.getFullYear();
+
+            const format = document.getElementById('dateFormat').value;
+            let dateString = '';
+            if (format === 'full') {
+                dateString = `${dayName}, ${day}/${month}/${year}`;
+            } else if (format === 'short') {
+                dateString = `${shortDayName} - ${day}/${month}/${year}`;
+            } else if (format === 'formal') {
+                dateString = `Ngày ${day} Tháng ${month}, ${year}`;
+            }
+            document.getElementById('dateText').innerText = dateString;
+
+            // Giờ, Phút, Giây
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            document.getElementById('hours').innerText = hours;
+            document.getElementById('minutes').innerText = minutes;
+            document.getElementById('seconds').innerText = ":" + seconds;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Thay đổi Theme
+        function changeTheme() {
+            const theme = document.getElementById('themeSelect').value;
+            document.body.className = theme;
+            saveSettings();
+        }
+
+        // Cập nhật tiêu đề / tag
+        function updateTag() {
+            const val = document.getElementById('tagInput').value;
+            document.getElementById('customTag').innerText = val;
+            saveSettings();
+        }
+
+        // Bo góc
+        function updateRadius() {
+            const val = document.getElementById('radiusRange').value;
+            document.getElementById('clockBox').style.borderRadius = val + 'px';
+            saveSettings();
+        }
+
+        // Phím tắt F9 để ẩn/hiện bảng điều khiển khi live
+        let panelVisible = true;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'F9') {
+                togglePanel();
+            }
+        });
+
+        function togglePanel() {
+            const panel = document.getElementById('controlPanel');
+            panelVisible = !panelVisible;
+            panel.style.display = panelVisible ? 'flex' : 'none';
+        }
+
+        // Bật tắt Chroma Key (Xanh lá)
+        function toggleChroma() {
+            document.body.classList.toggle('chroma-key');
+        }
+
+        // Modal Startup
+        function openStartupModal() {
+            document.getElementById('startupModal').style.display = 'flex';
+        }
+        function closeStartupModal() {
+            document.getElementById('startupModal').style.display = 'none';
+        }
+
+        // Lưu cấu hình vào localStorage
+        function saveSettings() {
+            const settings = {
+                theme: document.getElementById('themeSelect').value,
+                dateFormat: document.getElementById('dateFormat').value,
+                tagText: document.getElementById('tagInput').value,
+                radius: document.getElementById('radiusRange').value
+            };
+            localStorage.setItem('tiktok_clock_settings', JSON.stringify(settings));
+        }
+
+        // Tải cấu hình khi mở lại
+        window.onload = function() {
+            // Kiểm tra nếu có tham số clean=1 thì ẩn bảng điều khiển luôn (dành cho Browser Source)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('clean') === '1') {
+                document.getElementById('controlPanel').style.display = 'none';
+            }
+
+            const saved = localStorage.getItem('tiktok_clock_settings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    document.getElementById('themeSelect').value = settings.theme || 'theme-glass';
+                    document.body.className = settings.theme || 'theme-glass';
+                    document.getElementById('dateFormat').value = settings.dateFormat || 'full';
+                    document.getElementById('tagInput').value = settings.tagText || '🔴 TIKTOK LIVE STUDIO';
+                    document.getElementById('customTag').innerText = settings.tagText || '🔴 TIKTOK LIVE STUDIO';
+                    document.getElementById('radiusRange').value = settings.radius || 16;
+                    document.getElementById('clockBox').style.borderRadius = (settings.radius || 16) + 'px';
+                } catch(e) {}
+            }
+        }
+
+        // Tải file .BAT tự khởi động giả lập
+        function downloadBatFile() {
+            const batContent = `@echo off
+title Khoi Dong TikTok Live Clock
+echo Dang mo ung dung TikTok Live Clock...
+start "" "%~dp0tiktok-clock-overlay.html?clean=1"
+exit`;
+            const blob = new Blob([batContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'Cai_Dat_Tu_Khoi_Dong.bat';
+            link.click();
+        }
+    </script>
+</body>
+</html>
