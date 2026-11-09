@@ -379,27 +379,73 @@
             localStorage.setItem('tiktok_clock_settings', JSON.stringify(settings));
         }
 
-        // Tải cấu hình khi mở lại
+        // Tải cấu hình khi mở lại hoặc qua URL Params
         window.onload = function() {
-            // Kiểm tra nếu có tham số clean=1 thì ẩn bảng điều khiển luôn (dành cho Browser Source)
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('clean') === '1') {
+
+            // Tự động ẩn bảng điều khiển nếu có clean=1
+            if (urlParams.get('clean') === '1' || urlParams.get('hide_controls') === '1') {
                 document.getElementById('controlPanel').style.display = 'none';
             }
 
+            // Đọc cấu hình từ localStorage trước
             const saved = localStorage.getItem('tiktok_clock_settings');
             if (saved) {
                 try {
                     const settings = JSON.parse(saved);
-                    document.getElementById('themeSelect').value = settings.theme || 'theme-glass';
-                    document.body.className = settings.theme || 'theme-glass';
-                    document.getElementById('dateFormat').value = settings.dateFormat || 'full';
-                    document.getElementById('tagInput').value = settings.tagText || '🔴 TIKTOK LIVE STUDIO';
-                    document.getElementById('customTag').innerText = settings.tagText || '🔴 TIKTOK LIVE STUDIO';
-                    document.getElementById('radiusRange').value = settings.radius || 16;
-                    document.getElementById('clockBox').style.borderRadius = (settings.radius || 16) + 'px';
+                    if (settings.theme) {
+                        document.getElementById('themeSelect').value = settings.theme;
+                        document.body.className = settings.theme;
+                    }
+                    if (settings.dateFormat) {
+                        document.getElementById('dateFormat').value = settings.dateFormat;
+                    }
+                    if (settings.tagText) {
+                        document.getElementById('tagInput').value = settings.tagText;
+                        document.getElementById('customTag').innerText = settings.tagText;
+                    }
+                    if (settings.radius) {
+                        document.getElementById('radiusRange').value = settings.radius;
+                        document.getElementById('clockBox').style.borderRadius = settings.radius + 'px';
+                    }
                 } catch(e) {}
             }
+
+            // URL Params sẽ ghi đè (rất tiện khi nhúng vào TikTok Live Studio)
+            const paramTheme = urlParams.get('theme');
+            if (paramTheme) {
+                const themeVal = paramTheme.startsWith('theme-') ? paramTheme : 'theme-' + paramTheme;
+                document.getElementById('themeSelect').value = themeVal;
+                document.body.className = themeVal;
+            }
+
+            const paramFormat = urlParams.get('format');
+            if (paramFormat) {
+                document.getElementById('dateFormat').value = paramFormat;
+            }
+
+            const paramTag = urlParams.get('tag');
+            if (paramTag !== null) {
+                document.getElementById('tagInput').value = paramTag;
+                document.getElementById('customTag').innerText = paramTag;
+            }
+
+            const paramRadius = urlParams.get('radius');
+            if (paramRadius) {
+                document.getElementById('radiusRange').value = paramRadius;
+                document.getElementById('clockBox').style.borderRadius = paramRadius + 'px';
+            }
+
+            const paramScale = urlParams.get('scale');
+            if (paramScale) {
+                document.getElementById('clockBox').style.transform = `scale(${paramScale})`;
+            }
+
+            if (urlParams.get('chroma') === '1') {
+                document.body.classList.add('chroma-key');
+            }
+
+            updateClock();
         }
 
         // Tải file .BAT tự khởi động giả lập
